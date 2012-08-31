@@ -20,6 +20,10 @@
       <button id="send_chat_btn">Send</button>
     </div>
     
+    <div id="subscription_status">
+    	<span>Subscription Status: </span><span class="status"></span>
+    </div>
+    
     <div id="chat_messages">
     </div>
   </div>
@@ -42,7 +46,7 @@
       
       var chatChannel = pusher.subscribe('presence-chat-channel');
       chatChannel.bind('pusher:subscription_succeeded', function(){
-      	alert("subscribed");
+      	$("#subscription_status .status").text("subscribed");
       });
       chatChannel.bind('chat-message-received', function(message) {
         var html = createMsgHTML(message);
@@ -98,15 +102,10 @@
 
       test("Chat updates are displayed in the UI", function() {
         var message = {from: '1234.1234', text: 'hello!'};
-        var subscriptionData = {"presence":{"count":1,"ids":["6451"],"hash":{"6451":null}},
-        	"channel":"presence-chat-channel-85ef02b6f33211e1908f1231381da4b2"}; 
         var expected = createMsgHTML(message);
         
         var stub = Pusher.instances[0];
-        
-        //dispatching subscribe message
-        stub.channel('presence-chat-channel').dispatch('pusher:subscribe', subscriptionData);
-        
+                
         stub.channel('presence-chat-channel').dispatch('chat-message-received', message);
         
         var uiFrom = $("#chat_messages .from").text();
@@ -115,6 +114,20 @@
         equal( uiFrom, message.from, "We expect the from to be '" + message.from + "'" );
         equal( uiText, message.text, "We expect the text to be '" + message.text + "'" );        
       });
+
+	  module("Faking pusher:subscription_succeeded");
+	  
+	  test("Chat client gracefully handles pusher:subscription_succeeded", function(){
+        var subscriptionData = {"presence":{"count":1,"ids":["6451"],"hash":{"6451":null}},
+        	"channel":"presence-chat-channel-85ef02b6f33211e1908f1231381da4b2"}; 
+        
+        var stub = Pusher.instances[0];
+        stub.channel('presence-chat-channel').dispatch('pusher:subscription_succeeded', subscriptionData);
+	  
+	  	var uiStatus = $("#subscription_status .status").text();
+	  	        
+        equal( uiStatus, "subscribed");
+	  });
 
       module("Failures");
 

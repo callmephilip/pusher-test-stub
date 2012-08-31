@@ -24,13 +24,15 @@
     </div>
   </div>
   
-  <script src="http://js.pusherapp.com/1.9/pusher.min.js"></script>
+  <script src="http://js.pusher.com/1.12/pusher.min.js"></script>
   <script>
     $(function() {
       
       Pusher.log = function(message) {
         if (window.console && window.console.log) window.console.log(message);
       };
+
+      WEB_SOCKET_DEBUG = true;
       
       var pusher = new Pusher('006c79b1fe1700c6c10d');
       pusher.connection.bind('state_change', function() {
@@ -39,6 +41,9 @@
       });
       
       var chatChannel = pusher.subscribe('presence-chat-channel');
+      chatChannel.bind('pusher:subscription_succeeded', function(){
+      	alert("subscribed");
+      });
       chatChannel.bind('chat-message-received', function(message) {
         var html = createMsgHTML(message);
         $("#chat_messages").prepend(html);
@@ -93,9 +98,15 @@
 
       test("Chat updates are displayed in the UI", function() {
         var message = {from: '1234.1234', text: 'hello!'};
+        var subscriptionData = {"presence":{"count":1,"ids":["6451"],"hash":{"6451":null}},
+        	"channel":"presence-chat-channel-85ef02b6f33211e1908f1231381da4b2"}; 
         var expected = createMsgHTML(message);
         
         var stub = Pusher.instances[0];
+        
+        //dispatching subscribe message
+        stub.channel('presence-chat-channel').dispatch('pusher:subscribe', subscriptionData);
+        
         stub.channel('presence-chat-channel').dispatch('chat-message-received', message);
         
         var uiFrom = $("#chat_messages .from").text();
